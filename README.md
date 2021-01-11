@@ -24,7 +24,7 @@ Run "CPSC2018_CNN_jacob.py" for the result of "jacob" in the paper.
 Run "CPSC2018_CNN_CE.py" for the result of "CE" in the paper.
 Run "CPSC2018_CNN_ce_adv_pgd_ls.py" for the result of "advls_$\epsilon$" in the paper.
 
-The parameters can be set in the corresponding .py files and the detailed explaination can be found in the paper https://arxiv.org/abs/2008.03609.
+The parameters can be set in the corresponding .py files and the detailed explaination can be found in the paper.
 
 
 # Questions
