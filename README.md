@@ -4,8 +4,10 @@ This work was conducted at Department of Computer Science, University of Miami
 If you find our codes useful, we kindly ask you to cite our work:
 
 Ma, Linhai, and Liang Liang. "Improve robustness of DNN for ECG signal classification: a noise-to-signal ratio perspective." arXiv preprint arXiv:2005.09134 (2020).
+https://arxiv.org/abs/2005.09134
 
 L. Ma and L. Liang, "Enhance CNN Robustness Against Noises for Classification of 12-Lead ECG with Variable Length," 2020 19th IEEE International Conference on Machine Learning and Applications (ICMLA), 2020, pp. 839-846, doi: 10.1109/ICMLA51294.2020.00137.
+https://ieeexplore.ieee.org/abstract/document/9356227
 
 ## Keywords: ECG, DNN, robustness, adversarial noises
 
