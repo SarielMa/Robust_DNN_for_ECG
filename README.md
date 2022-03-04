@@ -13,7 +13,7 @@ https://ieeexplore.ieee.org/abstract/document/9356227
 Ma, Linhai, and Liang Liang. "A regularization method to improve adversarial robustness of neural networks for ECG signal classification." Computers in Biology and Medicine (2022): 105345.
 https://www.sciencedirect.com/science/article/pii/S0010482522001378
 
-## Keywords: ECG, DNN, robustness, adversarial noises
+## Keywords: ECG classification, deep neural network, adversarial robustness, adversarial noises
 
 # Environment
 Python version==3.8.3; Pytorch version==1.5.0; Operation system: CentOS 7. Kernel version: is 3.10.0-1062.1.2.el7.x86_64.
