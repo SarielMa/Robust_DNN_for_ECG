@@ -2,6 +2,67 @@ import numpy as np
 import torch
 from torch import optim
 import torch.nn.functional as nnF
+import sys
+
+#%%
+def pgd_conv(inputs, targets, mask, model, eps = None, step_alpha = None, num_steps = None, sizes = None, weights = None):
+    """
+    paper available at https://www.nature.com/articles/s41591-020-0791-x
+    code available at https://github.com/XintianHan/ADV_ECG/blob/master/create_adv_conv_train.py
+    :param inputs: Clean samples (Batch X Size)
+    :param targets: True labels
+    :param model: Model
+    :param criterion: Loss function
+    :param gamma:
+    :return:
+    """
+    MAX_SENTENCE_LENGTH=30720+3072
+    criterion = nnF.cross_entropy
+    crafting_input = torch.autograd.Variable(inputs.clone(), requires_grad=True)
+    crafting_target = torch.autograd.Variable(targets.clone())
+    for i in range(num_steps):
+        output = model(crafting_input, mask)
+        loss = criterion(output, crafting_target)
+        if crafting_input.grad is not None:
+            crafting_input.grad.data.zero_()
+        loss.backward()
+        added = torch.sign(crafting_input.grad.data)
+        step_output = crafting_input + step_alpha * added
+        total_adv = step_output - inputs
+        total_adv = torch.clamp(total_adv, -eps, eps)
+        crafting_output = inputs + total_adv
+        crafting_input = torch.autograd.Variable(crafting_output.detach().clone(), requires_grad=True)
+    added = crafting_output - inputs
+    added = torch.autograd.Variable(added.detach().clone(), requires_grad=True)
+    
+    for i in range(num_steps*2):
+        temp = nnF.conv1d(added.view(-1,1,MAX_SENTENCE_LENGTH), 
+                          weights[0],padding = sizes[0]//2).view(added.size(0),added.size(1),-1)
+        for j in range(len(sizes)-1):
+            temp = nnF.conv1d(added.view(-1,1,MAX_SENTENCE_LENGTH), 
+                              weights[j+1],padding = sizes[j+1]//2).view(added.size(0),added.size(1),-1)
+
+        temp = temp/float(len(sizes))
+        
+        output = model(inputs + temp, mask)        
+        loss = criterion(output, targets)
+        loss.backward()
+        
+        added = added + step_alpha * torch.sign(added.grad.data)
+        added = torch.clamp(added, -eps, eps)
+        added = torch.autograd.Variable(added.detach().clone(), requires_grad=True)
+
+    crafting_output = inputs + temp.detach()
+    crafting_output_clamp = crafting_output.clone()
+
+    if len(output.size()) <= 1:
+        Ypn = (output>0).to(torch.int64)
+    else:
+        Ypn = output.data.max(dim=1)[1]
+    sys.stdout.flush()
+    return  crafting_output_clamp, output, Ypn
+
+
 #%%
 def cal_AUC_robustness(acc_list, noise_level_list):
     #noise_level_list[0] is 0
@@ -681,6 +742,26 @@ def test_adv(model, device, dataloader, num_classes, noise_norm, norm_type, max_
                                               stop_if_label_change=stop_if_label_change,
                                               use_optimizer=use_optimizer, loss_fn=pgd_loss_fn,
                                               return_output=True, num_repeats=num_repeats)
+        elif method == 'SAP':
+            sizes = [5, 7, 11, 15, 19]
+            sigmas = [1.0, 3.0, 5.0, 7.0, 10.0]
+            #print('sizes:',sizes)
+            #print('sigmas:', sigmas)
+            crafting_sizes = []
+            crafting_weights = []
+            for size in sizes:
+                for sigma in sigmas:
+                    crafting_sizes.append(size)
+                    weight = np.arange(size) - size//2
+                    weight = np.exp(-weight**2.0/2.0/(sigma**2))/np.sum(np.exp(-weight**2.0/2.0/(sigma**2)))
+                    weight = torch.from_numpy(weight).unsqueeze(0).unsqueeze(0).type(torch.FloatTensor).to(device)
+                    crafting_weights.append(weight)
+            #print("crafting sizes ",crafting_sizes
+            
+            #print("crafting w", crafting_weights)
+            Xn, Zn, Ypn = pgd_conv(inputs = X, targets=Y, mask = Mask, model=model, eps = noise_norm, step_alpha = step, 
+                          num_steps = max_iter, sizes = crafting_sizes, weights = crafting_weights)
+
         else:
             raise NotImplementedError("other method is not implemented.")
         #------------------
